@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - ABUAD Voting{% endblock %}
+
+{% block content %}
+<div class="text-center py-12">
+    <h1 class="text-5xl font-bold text-blue-600 mb-6">ABUAD Student Elections</h1>
+    <p class="text-xl text-gray-600 mb-8">Official voting portal for student body elections.</p>
+    <div class="space-x-4">
+        {% if current_user.is_authenticated %}
+            {% if current_user.is_admin %}
+                <a href="{{ url_for('create_poll_route') }}" class="btn btn-primary text-lg"><i class="fas fa-plus-circle mr-2"></i>Create a New Poll</a>
+            {% endif %}
+            <a href="{{ url_for('view_polls') }}" class="btn btn-outline text-lg"><i class="fas fa-list-ul mr-2"></i>View All Elections</a>
+        {% else %}
+            <a href="{{ url_for('login') }}" class="btn btn-primary text-lg"><i class="fas fa-sign-in-alt mr-2"></i>Login to Participate</a>
+            <a href="{{ url_for('register') }}" class="btn btn-secondary text-lg"><i class="fas fa-user-plus mr-2"></i>Register Now</a>
+        {% endif %}
+    </div>
+</div>
+
+{# Section for displaying recent polls or messages about polls #}
+{% if polls and polls|length > 0 %}
+    <div class="mt-16">
+        <h2 class="text-3xl font-semibold text-gray-700 mb-6 text-center">Recent & Active Elections</h2>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for poll in polls %}
+            <div class="card hover:shadow-xl transition-shadow duration-300 flex flex-col">
+                <div class="flex-grow">
+                    <div class="flex items-center mb-3">
+                        {# Display Organization Logo #}
+                        {% if poll.org_logo %}
+                             <img src="{{ url_for('static', filename='images/organization_logos/' + poll.org_logo) }}" alt="{{ poll.org_name }} Logo" class="h-12 w-12 mr-4 rounded-full object-contain border p-1" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                             <span class="h-12 w-12 mr-4 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xl" style="display: none;"><i class="fas fa-university"></i></span>
+                        {% else %}
+                             <span class="h-12 w-12 mr-4 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xl"><i class="fas fa-university"></i></span>
+                        {% endif %}
+                        <div>
+                            <h3 class="text-xl font-semibold text-blue-600">{{ poll.title }}</h3>
+                            {% if poll.org_name %}
+                                <p class="text-sm text-gray-600">{{ poll.org_name }} ({{ poll.org_acronym }})</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <p class="text-gray-500 text-xs mb-4 ml-16">
+                        Created: {{ poll.created_at.strftime('%b %d, %Y') if poll.created_at else 'N/A' }}
+                    </p>
+                </div>
+                <div class="flex justify-between items-center mt-auto">
+                    <a href="{{ url_for('vote', poll_id=poll.id) }}" class="btn btn-primary btn-sm"><i class="fas fa-vote-yea mr-1"></i>Vote Now</a>
+                    <a href="{{ url_for('view_results', poll_id=poll.id) }}" class="text-blue-500 hover:text-blue-700 text-sm">View Results <i class="fas fa-arrow-right ml-1"></i></a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-8">
+            <a href="{{ url_for('view_polls') }}" class="text-blue-600 hover:text-blue-700 font-medium">
+                View All Elections <i class="fas fa-angle-double-right ml-1"></i>
+            </a>
+        </div>
+    </div>
+{% elif current_user.is_authenticated and current_user.is_admin %}
+    <div class="mt-16 text-center card py-10 shadow-md">
+        <i class="fas fa-info-circle fa-3x text-blue-500 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-700 mb-2">No Polls Yet!</h3>
+        <p class="text-gray-600">Be the first to <a href="{{ url_for('create_poll_route') }}" class="text-blue-600 hover:underline font-semibold">create an election</a>!</p>
+    </div>
+{% else %}
+    <div class="mt-16 text-center card py-10 shadow-md">
+        <i class="fas fa-poll fa-3x text-gray-400 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-700 mb-2">No Active Elections</h3>
+        <p class="text-gray-600 mt-1"><a href="{{ url_for('login') }}" class="text-blue-600 hover:underline font-semibold">Login</a> or <a href="{{ url_for('register') }}" class="text-blue-600 hover:underline font-semibold">Register</a> to participate.</p>
+    </div>
+{% endif %}
+{% endblock %}

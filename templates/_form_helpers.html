@@ -1,0 +1,28 @@
+{% macro render_field(field, placeholder_text="") %}
+  <div class="mb-4">
+    {{ field.label(class="form-label") }}
+    {% if field.type == 'RadioField' %}
+        <div class="mt-2 space-y-2">
+        {% for subfield in field %}
+            <label class="flex items-center poll-option-label">
+                {{ subfield(class="mr-3 accent-blue-600 h-4 w-4") }}
+                {{ subfield.label.text }}
+            </label>
+        {% endfor %}
+        </div>
+    {% elif field.type == 'TextAreaField' %}
+         {{ field(class="form-input min-h-[100px]" + (" border-red-500" if field.errors else ""), placeholder=placeholder_text or field.label.text) }}
+    {% else %}
+        {{ field(class="form-input" + (" border-red-500" if field.errors else ""), placeholder=placeholder_text or field.label.text) }}
+    {% endif %}
+    {% if field.errors %}
+      <ul class="errors mt-1">
+        {% for error in field.errors %}<li><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{% macro render_submit_button(field, text=None) %}
+    {{ field(class="btn btn-primary w-full", value=(text or field.label.text)) }}
+{% endmacro %}

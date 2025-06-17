@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "_form_helpers.html" import render_field, render_submit_button %}
+
+{% block title %}Create New Poll - Voting App{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto mt-8">
+    <div class="card">
+        <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">Create a New Poll</h2>
+        
+        <form method="POST" action="{{ url_for('create_poll_route') }}" id="create-poll-form" novalidate>
+            {{ form.hidden_tag() }} {# CSRF token #}
+            {{ form.options_data() }} {# Hidden field for JSON options #}
+
+            {{ render_field(form.title, placeholder_text="Enter a clear and concise title for your poll") }}
+            
+            {# Render the new Organization dropdown here #}
+            {{ render_field(form.organization) }}
+            
+            <div class="mb-6 mt-4">
+                <label class="form-label">Poll Options</label>
+                <div id="poll-options-container" class="space-y-3">
+                    <div class="flex items-center space-x-2 mb-2">
+                        <input type="text" name="dynamic_option_1" class="form-input flex-grow" placeholder="Option 1 (Required)">
+                    </div>
+                    <div class="flex items-center space-x-2 mb-2">
+                        <input type="text" name="dynamic_option_2" class="form-input flex-grow" placeholder="Option 2 (Required)">
+                    </div>
+                </div>
+                <button type="button" id="add-option-button" class="btn btn-outline mt-3 text-sm">
+                    <i class="fas fa-plus mr-2"></i>Add Another Option
+                </button>
+                <p class="text-xs text-gray-500 mt-1">Minimum 2 options required.</p>
+            </div>
+            
+            <div>
+                {{ render_submit_button(form.submit, text="Create Poll") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // JS for adding/removing options and populating hidden field
+    // (This logic is in main.js and doesn't need to change)
+</script>
+{% endblock %}

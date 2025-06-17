@@ -1,0 +1,21 @@
+<!-- templates/admin/_admin_sidebar.html -->
+<aside class="w-1/5 bg-gray-800 text-white p-6 min-h-[calc(100vh-var(--navbar-height,100px))] shadow-lg rounded-lg mr-6">
+    <h2 class="text-2xl font-semibold mb-6 border-b border-gray-700 pb-3">Admin Menu</h2>
+    <nav class="space-y-3">
+        <a href="{{ url_for('admin_dashboard') }}" class="block py-2.5 px-4 rounded-md text-lg hover:bg-gray-700 transition duration-200 {% if request.endpoint == 'admin_dashboard' %}bg-blue-600 text-white{% endif %}">
+            <i class="fas fa-tachometer-alt fa-fw mr-3"></i>Dashboard
+        </a>
+        <a href="{{ url_for('admin_users') }}" class="block py-2.5 px-4 rounded-md text-lg hover:bg-gray-700 transition duration-200 {% if 'admin_users' in request.endpoint %}bg-blue-600 text-white{% endif %}">
+            <i class="fas fa-users fa-fw mr-3"></i>Manage Users
+        </a>
+        <a href="{{ url_for('admin_organizations') }}" class="block py-2.5 px-4 rounded-md text-lg hover:bg-gray-700 transition duration-200 {% if 'admin_organization' in request.endpoint %}bg-blue-600 text-white{% endif %}">
+            <i class="fas fa-sitemap fa-fw mr-3"></i>Manage Organizations
+        </a>
+        <a href="{{ url_for('admin_tables') }}" class="block py-2.5 px-4 rounded-md text-lg hover:bg-gray-700 transition duration-200 {% if 'admin_table' in request.endpoint %}bg-blue-600 text-white{% endif %}">
+            <i class="fas fa-database fa-fw mr-3"></i>Database Tables
+        </a>
+        <a href="{{ url_for('admin_settings') }}" class="block py-2.5 px-4 rounded-md text-lg hover:bg-gray-700 transition duration-200 {% if request.endpoint == 'admin_settings' %}bg-blue-600 text-white{% endif %}">
+            <i class="fas fa-cogs fa-fw mr-3"></i>App Settings
+        </a>
+    </nav>
+</aside>

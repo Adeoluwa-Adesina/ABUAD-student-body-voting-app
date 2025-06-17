@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Voting App{% endblock %}
+
+{% block content %}
+<div class="flex">
+    {% include 'admin/_admin_sidebar.html' %}
+
+    <div class="w-4/5">
+        <div class="card mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Admin Dashboard</h1>
+            <p class="text-gray-600">Welcome, {{ current_user.username }}! Here you can manage the application.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div class="card text-center hover:shadow-xl transition-shadow">
+                <i class="fas fa-users fa-3x text-blue-500 mb-3"></i>
+                <h3 class="text-xl font-semibold text-gray-700">Total Users</h3>
+                <p class="text-4xl font-bold text-blue-600">{{ user_count | default('N/A') }}</p>
+            </div>
+            <div class="card text-center hover:shadow-xl transition-shadow">
+                <i class="fas fa-poll fa-3x text-green-500 mb-3"></i>
+                <h3 class="text-xl font-semibold text-gray-700">Total Polls</h3>
+                <p class="text-4xl font-bold text-green-600">{{ poll_count | default('N/A') }}</p>
+            </div>
+            <div class="card text-center hover:shadow-xl transition-shadow">
+                <i class="fas fa-vote-yea fa-3x text-purple-500 mb-3"></i>
+                <h3 class="text-xl font-semibold text-gray-700">Total Votes (Example)</h3>
+                <p class="text-4xl font-bold text-purple-600">N/A</p> </div>
+        </div>
+
+        <div class="card">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Quick Actions</h2>
+            <div class="space-y-3 sm:space-y-0 sm:flex sm:space-x-4">
+                <a href="{{ url_for('admin_users') }}" class="btn btn-primary"><i class="fas fa-user-edit mr-2"></i>Manage Users</a>
+                <a href="{{ url_for('create_poll_route') }}" class="btn btn-secondary"><i class="fas fa-plus-circle mr-2"></i>Create a Poll (as Admin)</a>
+                {# Add more quick actions as needed #}
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // Adjust main content min-height based on navbar height dynamically
+    document.addEventListener('DOMContentLoaded', function() {
+        const navbarHeight = document.querySelector('nav').offsetHeight;
+        const adminSidebar = document.querySelector('.admin-sidebar'); // Assuming this class for sidebar
+        if (adminSidebar) {
+            adminSidebar.style.minHeight = `calc(100vh - ${navbarHeight}px - 2rem)`; // 2rem for body padding
+        }
+    });
+</script>
+{% endblock %}

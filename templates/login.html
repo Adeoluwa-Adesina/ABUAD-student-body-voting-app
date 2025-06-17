@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "_form_helpers.html" import render_field %}
+
+{% block title %}Login - Voting App{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-10">
+    <div class="card">
+        <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">Login to Your Account</h2>
+        <form method="POST" action="{{ url_for('login', next=request.args.get('next')) }}" novalidate>
+            {{ form.hidden_tag() }} {# CSRF token #}
+            
+            <div class="mb-4">
+                <label for="{{ form.username.id }}" class="form-label">{{ form.username.label.text }}</label>
+                {{ form.username(class="form-input" + (" border-red-500" if form.username.errors else ""), placeholder="Your username") }}
+                {% if form.username.errors %}
+                    <ul class="errors">
+                        {% for error in form.username.errors %}<li>{{ error }}</li>{% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="mb-6">
+                <label for="{{ form.password.id }}" class="form-label">{{ form.password.label.text }}</label>
+                {{ form.password(class="form-input" + (" border-red-500" if form.password.errors else ""), placeholder="Your password") }}
+                {% if form.password.errors %}
+                    <ul class="errors">
+                        {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+            
+            {# Optional: Remember me checkbox if you implement it #}
+            {# <div class="mb-6 flex items-center justify-between">
+                <div class="flex items-center">
+                    <input id="remember_me" name="remember_me" type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="remember_me" class="ml-2 block text-sm text-gray-900">Remember me</label>
+                </div>
+                <div class="text-sm">
+                    <a href="#" class="font-medium text-blue-600 hover:text-blue-500">Forgot your password?</a>
+                </div>
+            </div> #}
+
+            <div>
+                {{ form.submit(class="btn btn-primary w-full") }}
+            </div>
+        </form>
+        <p class="text-center text-gray-600 mt-6">
+            Don't have an account? <a href="{{ url_for('register') }}" class="text-blue-600 hover:underline font-medium">Register here</a>.
+        </p>
+    </div>
+</div>
+{% endblock %}

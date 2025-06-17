@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_form_helpers.html" import render_field, render_submit_button %}
+
+{% block title %}Add Organization - Admin{% endblock %}
+
+{% block content %}
+<div class="flex">
+    <!-- Admin Sidebar -->
+     {% include 'admin/_admin_sidebar.html' %}
+
+    <!-- Main Admin Content -->
+    <div class="w-4/5">
+        <div class="card">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Add New Organization</h1>
+            
+            <form method="POST" action="{{ url_for('admin_add_organization') }}" novalidate>
+                {{ form.hidden_tag() }}
+                
+                {{ render_field(form.name, placeholder_text="e.g., Students Representative Council") }}
+                {{ render_field(form.acronym, placeholder_text="e.g., SRC") }}
+                {{ render_field(form.logo_filename, placeholder_text="e.g., src_logo.png") }}
+                {{ render_field(form.description, placeholder_text="A brief description of the organization.") }}
+                
+                <div class="flex items-center space-x-4 mt-6">
+                    {{ render_submit_button(form.submit) }}
+                    <a href="{{ url_for('admin_organizations') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

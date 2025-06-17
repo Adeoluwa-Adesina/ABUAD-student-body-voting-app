@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% from "_form_helpers.html" import render_field, render_submit_button %}
+
+{% block title %}Vote: {{ poll.title }} - ABUAD Voting{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto mt-8">
+    <div class="card">
+        <div class="flex items-center mb-6">
+             {% if poll.org_logo %}
+                <img src="{{ url_for('static', filename='images/organization_logos/' + poll.org_logo) }}" alt="{{ poll.org_name }} Logo" class="h-16 w-16 mr-4 rounded-full object-contain border p-1" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <span class="h-16 w-16 mr-4 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-2xl" style="display: none;"><i class="fas fa-university"></i></span>
+            {% else %}
+                <span class="h-16 w-16 mr-4 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-2xl"><i class="fas fa-university"></i></span>
+            {% endif %}
+            <div>
+                 <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-1">{{ poll.title }}</h2>
+                 {% if poll.org_name %}
+                    <p class="text-md text-gray-600">Conducted by: {{ poll.org_name }} ({{ poll.org_acronym }})</p>
+                {% endif %}
+            </div>
+        </div>
+       
+        <p class="text-gray-600 mb-6">Select one option below to cast your vote.</p>
+
+        {% if existing_vote_info %}
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-md" role="alert">
+                <p class="font-bold">Already Voted!</p>
+                <p>You have already cast your vote in this election.</p>
+                <p class="mt-2">
+                    You can <a href="{{ url_for('view_results', poll_id=poll.id) }}" class="font-medium text-yellow-800 hover:underline">view the current results</a>.
+                </p>
+            </div>
+        {% else %}
+            {% if poll.options and poll.options|length > 0 %}
+            <form method="POST" action="{{ url_for('vote', poll_id=poll.id) }}" novalidate>
+                {{ form.hidden_tag() }} {# CSRF token #}
+                
+                {{ render_field(form.option) }}
+
+                <div class="mt-8">
+                    {{ render_submit_button(form.submit, text="Cast Your Vote") }}
+                </div>
+            </form>
+            {% else %}
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md" role="alert">
+                <p class="font-bold">No Options Available</p>
+                <p>This poll currently has no options to vote on.</p>
+            </div>
+            {% endif %}
+        {% endif %}
+
+        {% if not existing_vote_info %}
+        <div class="mt-6 text-center">
+            <a href="{{ url_for('view_results', poll_id=poll.id) }}" class="text-blue-600 hover:underline">
+                Skip to Results <i class="fas fa-chart-line ml-1"></i>
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

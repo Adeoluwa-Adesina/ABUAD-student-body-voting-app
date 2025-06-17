@@ -1,0 +1,80 @@
+/* General body styling (Tailwind handles most of this, but can add global overrides) */
+body {
+    @apply bg-gray-100 text-gray-800;
+    font-family: 'Inter', sans-serif; /* Ensure Inter font is loaded or fall back */
+}
+
+/* Custom scrollbar (optional, for aesthetics) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    @apply bg-gray-200 rounded-full;
+}
+::-webkit-scrollbar-thumb {
+    @apply bg-blue-500 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+    @apply bg-blue-600;
+}
+
+/* Additional global styles or component overrides can go here */
+
+/* Example: Style for form error messages from WTForms */
+.form-error-message {
+    @apply text-red-500 text-sm mt-1;
+}
+
+/* Styling for WTForms field errors */
+ul.errors {
+    list-style-type: none;
+    padding: 0;
+    margin: 0.25rem 0 0 0; /* mt-1 */
+}
+ul.errors li {
+    @apply text-red-600 text-xs; /* text-red-600 text-xs */
+}
+
+/* Ensure form inputs have consistent focus states if not fully covered by base.html style block */
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+    /* Tailwind's focus:ring-2 focus:ring-blue-500 focus:border-blue-500 is good */
+    /* This is just an example if you wanted to override */
+}
+
+/* Card styling for consistency if not using Tailwind's shadow/bg directly everywhere */
+.content-card {
+    @apply bg-white p-6 rounded-lg shadow-lg;
+}
+
+/* Specific styles for poll options if needed */
+.poll-option-label {
+    @apply block p-3 border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer transition-colors;
+}
+.poll-option-label input[type="radio"] {
+    @apply mr-3 accent-blue-600; /* Styles the radio button itself */
+}
+
+/* Button styles (can be defined here or rely on Tailwind classes in HTML) */
+/* .btn { ... } defined in base.html style block */
+
+/* Chart container for results page */
+#resultsChartContainer {
+    @apply relative p-4 bg-white rounded-lg shadow;
+    min-height: 300px; /* Ensure there's space for the chart */
+}
+
+/* Admin specific styles if needed */
+.admin-sidebar {
+    @apply bg-gray-800 text-white w-64 space-y-2 p-4;
+}
+.admin-sidebar a {
+    @apply block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700;
+}
+.admin-content {
+    @apply flex-1 p-10;
+}

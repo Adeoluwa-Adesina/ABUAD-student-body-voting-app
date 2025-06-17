@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}View Table: {{ table_name }} - Admin{% endblock %}
+
+{% block content %}
+<div class="flex">
+    <!-- Admin Sidebar -->
+    {% include 'admin/_admin_sidebar.html' %}
+
+    <!-- Main Admin Content -->
+    <div class="w-4/5">
+        <div class="card">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">Viewing Table: <span class="text-blue-600">{{ table_name }}</span></h1>
+                    <p class="text-gray-500">Displaying up to 100 most recent records.</p>
+                </div>
+                <a href="{{ url_for('admin_tables') }}" class="btn btn-outline">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Tables List
+                </a>
+            </div>
+            
+            {% if rows %}
+            <div class="overflow-x-auto border rounded-lg">
+                <table class="min-w-full table bg-white">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            {% for header in headers %}
+                            <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ header.replace('_', ' ')|title }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for row in rows %}
+                        <tr>
+                            {% for header in headers %}
+                            <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-700">
+                                {# Truncate long text for better display #}
+                                {% set cell_value = row[header] %}
+                                {% if cell_value is string and cell_value|length > 70 %}
+                                    <span title="{{ cell_value }}">{{ cell_value[:70] }}...</span>
+                                {% else %}
+                                    {{ cell_value }}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% elif headers %}
+                <p class="text-center text-gray-600 py-8">Table '{{ table_name }}' is empty.</p>
+            {% else %}
+                <p class="text-center text-red-600 py-8">Could not retrieve data or headers for table '{{ table_name }}'.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

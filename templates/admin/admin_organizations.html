@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Organizations - Admin{% endblock %}
+
+{% block content %}
+<div class="flex">
+    <!-- Admin Sidebar -->
+    {% include 'admin/_admin_sidebar.html' %}
+
+    <!-- Main Admin Content -->
+    <div class="w-4/5">
+        <div class="card">
+            <div class="flex items-center justify-between mb-6">
+                 <h1 class="text-3xl font-bold text-gray-800">Manage Organizations</h1>
+                 <a href="{{ url_for('admin_add_organization') }}" class="btn btn-primary">
+                     <i class="fas fa-plus mr-2"></i>Add New Organization
+                 </a>
+            </div>
+           
+            {% if organizations %}
+            <div class="overflow-x-auto border rounded-lg">
+                <table class="min-w-full table bg-white">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="py-3 px-4 text-left">Logo</th>
+                            <th class="py-3 px-4 text-left">Name</th>
+                            <th class="py-3 px-4 text-left">Acronym</th>
+                            <th class="py-3 px-4 text-left">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for org in organizations %}
+                        <tr>
+                            <td class="py-2 px-4">
+                                <span class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-lg">
+                                    <i class="fas fa-university"></i>
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 font-medium">{{ org.name }}</td>
+                            <td class="py-3 px-4">{{ org.acronym }}</td>
+                            <td class="py-3 px-4">
+                                <a href="#" class="text-blue-600 hover:underline disabled:opacity-50" title="Edit (Not Implemented)">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <p class="text-center text-gray-600 py-8">No organizations found. <a href="{{ url_for('admin_add_organization') }}" class="text-blue-600 hover:underline">Add one now</a>.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
