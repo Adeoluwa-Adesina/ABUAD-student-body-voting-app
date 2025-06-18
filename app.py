@@ -5,12 +5,13 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import psycopg2
-from psycopg2.extras import DictCursor # Useful for getting column names
-from forms import RegistrationForm, LoginForm, PollForm, VoteForm, OrganizationForm
+from psycopg2.extras import DictCursor
+from forms import RegistrationForm, LoginForm, PollForm, OptionForm, VoteForm, OrganizationForm
 from flask_wtf.csrf import CSRFProtect, CSRFError
 import json
 import os
 import datetime
+import sys # Import sys to access stdout
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', '1234_default_secret_key')
@@ -21,17 +22,25 @@ login_manager = LoginManager()
 login_manager.login_view = 'login'
 login_manager.init_app(app)
 
-# --- Logging Configuration ---
-if not os.path.exists('logs'):
-    os.makedirs('logs')
-file_handler = logging.handlers.RotatingFileHandler(
-    'logs/app.log', maxBytes=1024 * 1024 * 10, backupCount=5, encoding='utf-8'
-)
-file_handler.setLevel(logging.DEBUG)
+# --- Optimized Logging Configuration for Vercel ---
+# Remove the existing file handler to avoid writing to a temporary filesystem
+if app.logger.handlers:
+    app.logger.handlers.clear()
+
+# Create a stream handler to output logs to stdout, which Vercel captures
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setLevel(logging.INFO) # Use INFO level for production
+
+# Create a formatter and set it for the handler
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-app.logger.addHandler(file_handler)
-app.logger.setLevel(logging.DEBUG)
+stream_handler.setFormatter(formatter)
+
+# Add the handler to the app's logger
+app.logger.addHandler(stream_handler)
+app.logger.setLevel(logging.INFO) # Set the app's logger level
+
+app.logger.info("Logging configured for production environment (Vercel).")
+
 
 # --- Context Processor to inject current year ---
 @app.context_processor
@@ -123,29 +132,6 @@ def SCRIPT_create_initial_admin_user():
         else:
             app.logger.info(f"Admin user '{admin_username}' already exists.")
 
-def create_organization_db(name, acronym, logo_filename, description):
-    """Inserts a new organization into the database."""
-    conn = get_db_connection()
-    if not conn: return False
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                'INSERT INTO organization (name, acronym, logo_filename, description) VALUES (%s, %s, %s, %s)',
-                (name, acronym, logo_filename, description)
-            )
-            conn.commit()
-            return True
-    except psycopg2.IntegrityError as e:
-        app.logger.warning(f"Integrity error creating organization (likely exists): {e}")
-        conn.rollback()
-        return "exists" # Special return value to signal it exists
-    except psycopg2.Error as e:
-        app.logger.error(f"Error creating organization '{name}': {e}")
-        conn.rollback()
-        return False
-    finally:
-        if conn: conn.close()
-
 # --- Organization Functions ---
 def get_all_organizations():
     conn = get_db_connection()
@@ -161,6 +147,25 @@ def get_all_organizations():
     finally:
         if conn: conn.close()
 
+def create_organization_db(name, acronym, logo_filename, description):
+    conn = get_db_connection()
+    if not conn: return False
+    try:
+        with conn.cursor() as cur:
+            cur.execute('INSERT INTO organization (name, acronym, logo_filename, description) VALUES (%s, %s, %s, %s)', (name, acronym, logo_filename, description))
+            conn.commit()
+            return True
+    except psycopg2.IntegrityError as e:
+        app.logger.warning(f"Integrity error creating organization (likely exists): {e}")
+        conn.rollback()
+        return "exists"
+    except psycopg2.Error as e:
+        app.logger.error(f"Error creating organization '{name}': {e}")
+        conn.rollback()
+        return False
+    finally:
+        if conn: conn.close()
+        
 # --- Poll and Vote Functions ---
 def get_all_polls():
     conn = get_db_connection()
@@ -280,7 +285,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- Routes ---
+# --- Main Routes ---
 @app.route('/')
 def index():
     all_polls_from_db = get_all_polls()
@@ -427,20 +432,14 @@ def admin_dashboard():
     else:
         try:
             with conn.cursor() as cur:
-                cur.execute("SELECT COUNT(*) FROM users")
-                user_count_result = cur.fetchone()
-                if user_count_result: user_count = user_count_result[0]
-                cur.execute("SELECT COUNT(*) FROM poll")
-                poll_count_result = cur.fetchone()
-                if poll_count_result: poll_count = poll_count_result[0]
-        except psycopg2.Error as e:
-            app.logger.error(f"Error fetching admin dashboard stats: {e}")
-            flash("Error fetching dashboard data.", "warning")
+                cur.execute("SELECT COUNT(*) FROM users"); user_count = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM poll"); poll_count = cur.fetchone()[0]
+        except psycopg2.Error as e: app.logger.error(f"Error fetching admin stats: {e}"); flash("Error fetching dashboard data.", "warning")
         finally:
             if conn: conn.close()
     return render_template("admin/admin_dashboard.html", user_count=user_count, poll_count=poll_count)
 
-@app.route("/admin/organizations")
+@app.route('/admin/organizations')
 @admin_required
 def admin_organizations():
     organizations = get_all_organizations()
@@ -451,12 +450,7 @@ def admin_organizations():
 def admin_add_organization():
     form = OrganizationForm()
     if form.validate_on_submit():
-        result = create_organization_db(
-            name=form.name.data,
-            acronym=form.acronym.data,
-            logo_filename=form.logo_filename.data,
-            description=form.description.data
-        )
+        result = create_organization_db(name=form.name.data, acronym=form.acronym.data, logo_filename=form.logo_filename.data, description=form.description.data)
         if result is True:
             flash(f"Organization '{form.name.data}' created successfully.", "success")
             return redirect(url_for('admin_organizations'))
@@ -478,9 +472,7 @@ def admin_tables():
             with conn.cursor() as cur:
                 cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY table_name")
                 tables_list = [r[0] for r in cur.fetchall()]
-        except psycopg2.Error as e:
-            app.logger.error(f"Error retrieving tables for admin: {e}")
-            flash("Error retrieving tables.", "danger")
+        except psycopg2.Error as e: app.logger.error(f"Error retrieving tables: {e}"); flash("Error retrieving tables.", "danger")
         finally:
             if conn: conn.close()
     return render_template('admin/admin_tables.html', tables=tables_list)
@@ -518,17 +510,14 @@ def admin_view_table(table_name):
 def admin_users():
     conn = get_db_connection()
     users_list = []
-    if not conn:
-        flash("Database connection error.", "danger")
+    if not conn: flash("Database connection error.", "danger")
     else:
         try:
             with conn.cursor() as cur:
                 cur.execute('SELECT id, username, is_admin, created_at FROM users ORDER BY username')
                 users_raw = cur.fetchall()
                 users_list = [{"id": u[0], "username": u[1], "is_admin": u[2], "created_at": u[3]} for u in users_raw]
-        except psycopg2.Error as e:
-            app.logger.error(f"Error retrieving users for admin: {e}")
-            flash("Error retrieving users.", "danger")
+        except psycopg2.Error as e: app.logger.error(f"Error retrieving users: {e}"); flash("Error retrieving users.", "danger")
         finally:
             if conn: conn.close()
     return render_template('admin/admin_users.html', users=users_list)
@@ -554,10 +543,7 @@ def toggle_admin(user_id):
                 flash("Admin status for user updated successfully.", "success")
             else:
                 flash("User not found.", "warning")
-    except psycopg2.Error as e:
-        app.logger.error(f"Error toggling admin status for user ID {user_id}: {e}")
-        if conn: conn.rollback()
-        flash("Error updating admin status.", "danger")
+    except psycopg2.Error as e: app.logger.error(f"Error toggling admin status: {e}"); conn.rollback(); flash("Error updating status.", "danger")
     finally:
         if conn: conn.close()
     return redirect(url_for('admin_users'))
@@ -582,10 +568,7 @@ def delete_user(user_id):
             cur.execute('DELETE FROM users WHERE id = %s', (user_id,))
             conn.commit()
             flash(f"User '{user_to_delete[0]}' deleted successfully.", "success")
-    except psycopg2.Error as e:
-        app.logger.error(f"Error deleting user ID {user_id}: {e}")
-        if conn: conn.rollback()
-        flash("Error deleting user.", "danger")
+    except psycopg2.Error as e: app.logger.error(f"Error deleting user: {e}"); conn.rollback(); flash("Error deleting user.", "danger")
     finally:
         if conn: conn.close()
     return redirect(url_for('admin_users'))
