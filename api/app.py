@@ -1,6 +1,6 @@
 import logging
 import logging.handlers
-from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, session
+from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, session, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -11,9 +11,16 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 import json
 import os
 import datetime
-import sys # Import sys to access stdout
+import sys
 
-app = Flask(__name__)
+# --- Vercel Path Configuration ---
+# Configure template and static folders to be found when deploying on Vercel.
+# This assumes this app.py file is in an 'api' directory at the project root.
+template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'templates')
+static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'static')
+
+# Initialize Flask app with custom paths
+app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', '1234_default_secret_key')
 app.config['WTF_CSRF_ENABLED'] = True
 
@@ -23,22 +30,14 @@ login_manager.login_view = 'login'
 login_manager.init_app(app)
 
 # --- Optimized Logging Configuration for Vercel ---
-# Remove the existing file handler to avoid writing to a temporary filesystem
 if app.logger.handlers:
     app.logger.handlers.clear()
-
-# Create a stream handler to output logs to stdout, which Vercel captures
 stream_handler = logging.StreamHandler(sys.stdout)
-stream_handler.setLevel(logging.INFO) # Use INFO level for production
-
-# Create a formatter and set it for the handler
+stream_handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 stream_handler.setFormatter(formatter)
-
-# Add the handler to the app's logger
 app.logger.addHandler(stream_handler)
-app.logger.setLevel(logging.INFO) # Set the app's logger level
-
+app.logger.setLevel(logging.INFO)
 app.logger.info("Logging configured for production environment (Vercel).")
 
 
@@ -288,6 +287,8 @@ def admin_required(f):
 # --- Main Routes ---
 @app.route('/')
 def index():
+    # Vercel requires the root route to be handled by the main app file
+    # This route will render the main page of your application
     all_polls_from_db = get_all_polls()
     polls_for_template = []
     if all_polls_from_db is None:
