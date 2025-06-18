@@ -6,7 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import psycopg2
 from psycopg2.extras import DictCursor
-from forms import RegistrationForm, LoginForm, PollForm, OptionForm, VoteForm, OrganizationForm
+from forms import RegistrationForm, LoginForm, PollForm, VoteForm, OrganizationForm
 from flask_wtf.csrf import CSRFProtect, CSRFError
 import json
 import os
