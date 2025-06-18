@@ -14,8 +14,6 @@ import datetime
 import sys
 
 # --- Vercel Path Configuration ---
-# Configure template and static folders to be found when deploying on Vercel.
-# This assumes this app.py file is in an 'api' directory at the project root.
 template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'templates')
 static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'static')
 
@@ -119,17 +117,48 @@ def create_user(username, password, is_admin=False):
         if conn: conn.close()
 
 def SCRIPT_create_initial_admin_user():
+    """
+    More robust script to create the initial admin user. It checks for a DB connection
+    and ensures the 'users' table exists before proceeding.
+    """
     admin_username = "admin"
     admin_password = "admin"
-    with app.app_context():
-        if not get_user_by_username(admin_username):
+    
+    app.logger.info("Running initial admin user setup script...")
+    
+    conn = get_db_connection()
+    if not conn:
+        app.logger.warning("Database connection not available. Skipping admin user creation.")
+        return
+
+    try:
+        with conn.cursor() as cur:
+            # Check if the 'users' table exists. This is a robust way to see if the schema is applied.
+            cur.execute("SELECT to_regclass('public.users');")
+            if cur.fetchone()[0] is None:
+                app.logger.warning("'users' table not found. Schema might not be applied. Skipping admin user creation.")
+                return
+
+            # Check if admin user already exists
+            cur.execute('SELECT id FROM "users" WHERE username = %s', (admin_username,))
+            if cur.fetchone():
+                app.logger.info(f"Admin user '{admin_username}' already exists.")
+                return
+
+            # If we reach here, the table exists and the user does not.
             app.logger.info(f"Creating initial admin user '{admin_username}'...")
-            if create_user(admin_username, admin_password, is_admin=True):
-                app.logger.info("Initial admin user created successfully.")
-            else:
-                app.logger.error("Failed to create initial admin user.")
-        else:
-            app.logger.info(f"Admin user '{admin_username}' already exists.")
+            hashed_password = generate_password_hash(admin_password)
+            cur.execute('INSERT INTO "users" (username, password_hash, is_admin) VALUES (%s, %s, %s)',
+                        (admin_username, hashed_password, True))
+            conn.commit()
+            app.logger.info(f"Initial admin user '{admin_username}' created successfully.")
+
+    except psycopg2.Error as e:
+        app.logger.error(f"A database error occurred during admin user creation script: {e}")
+    finally:
+        if conn:
+            conn.close()
+
 
 # --- Organization Functions ---
 def get_all_organizations():
@@ -287,8 +316,6 @@ def admin_required(f):
 # --- Main Routes ---
 @app.route('/')
 def index():
-    # Vercel requires the root route to be handled by the main app file
-    # This route will render the main page of your application
     all_polls_from_db = get_all_polls()
     polls_for_template = []
     if all_polls_from_db is None:
@@ -637,11 +664,14 @@ def handle_csrf_error(e):
     return redirect(request.referrer or url_for('index'))
 
 # --- App Startup ---
+# Create an application context to run the script.
 with app.app_context():
     try:
         SCRIPT_create_initial_admin_user()
     except Exception as e:
-        app.logger.error(f"Error during startup script: {e}")
+        # Broad exception catch because this runs outside a request and we don't
+        # want the entire app to crash if the DB isn't ready.
+        app.logger.error(f"An exception occurred during the initial admin user creation script: {e}")
 
 if __name__ == '__main__':
     app.run(debug=True)
