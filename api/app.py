@@ -133,19 +133,16 @@ def SCRIPT_create_initial_admin_user():
 
     try:
         with conn.cursor() as cur:
-            # Check if the 'users' table exists. This is a robust way to see if the schema is applied.
             cur.execute("SELECT to_regclass('public.users');")
             if cur.fetchone()[0] is None:
                 app.logger.warning("'users' table not found. Schema might not be applied. Skipping admin user creation.")
                 return
 
-            # Check if admin user already exists
             cur.execute('SELECT id FROM "users" WHERE username = %s', (admin_username,))
             if cur.fetchone():
                 app.logger.info(f"Admin user '{admin_username}' already exists.")
                 return
 
-            # If we reach here, the table exists and the user does not.
             app.logger.info(f"Creating initial admin user '{admin_username}'...")
             hashed_password = generate_password_hash(admin_password)
             cur.execute('INSERT INTO "users" (username, password_hash, is_admin) VALUES (%s, %s, %s)',
@@ -367,32 +364,46 @@ def create_poll_route():
     organizations = get_all_organizations()
     form.organization.choices = [(org['id'], f"{org['name']} ({org['acronym']})") for org in organizations]
     form.organization.choices.insert(0, (0, '--- Select an Organization ---'))
+
     if request.method == 'POST':
+        # Custom validation check for the placeholder option
         if form.organization.data == 0:
             form.organization.errors.append('You must select a conducting organization.')
+            # We don't need to return here, validate_on_submit will catch the new error
+
+        # Process the form if it's valid
         if form.validate_on_submit():
             title = form.title.data.strip()
             organization_id = form.organization.data
             options_json = request.form.get('options_data')
-            if not options_json:
-                flash("No poll options were submitted. Please add at least two options.", "danger")
-                return render_template('create_poll.html', form=form)
+
             try:
-                options = json.loads(options_json)
+                options = json.loads(options_json) if options_json else []
                 valid_options = [opt.strip() for opt in options if opt.strip()]
                 if len(valid_options) < 2:
+                    # This validation is now redundant if handled by JS, but good as a server-side backup
                     flash("A poll must have at least two distinct non-empty options.", "danger")
-                    return render_template('create_poll.html', form=form)
+                    return render_template('create_poll.html', form=form, title=form.title.data)
+
             except (json.JSONDecodeError, TypeError):
-                flash("Invalid options format.", "danger")
-                return render_template('create_poll.html', form=form)
+                flash("Invalid options format submitted.", "danger")
+                return render_template('create_poll.html', form=form, title=form.title.data)
+
             poll_id = create_poll_db(title, valid_options, organization_id)
             if poll_id:
                 flash('Poll created successfully!', 'success')
                 return redirect(url_for('vote', poll_id=poll_id))
             else:
                 flash('Failed to create poll. Please check logs or try again.', 'danger')
+        else:
+            # If validation fails, flash the errors
+            app.logger.warning(f"Poll creation form failed validation: {form.errors}")
+            for field, errors in form.errors.items():
+                for error in errors:
+                    flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
+
     return render_template('create_poll.html', form=form)
+
 
 @app.route('/polls')
 @login_required
@@ -664,13 +675,10 @@ def handle_csrf_error(e):
     return redirect(request.referrer or url_for('index'))
 
 # --- App Startup ---
-# Create an application context to run the script.
 with app.app_context():
     try:
         SCRIPT_create_initial_admin_user()
     except Exception as e:
-        # Broad exception catch because this runs outside a request and we don't
-        # want the entire app to crash if the DB isn't ready.
         app.logger.error(f"An exception occurred during the initial admin user creation script: {e}")
 
 if __name__ == '__main__':

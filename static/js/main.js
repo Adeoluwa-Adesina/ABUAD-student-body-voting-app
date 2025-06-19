@@ -2,23 +2,12 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Voting App Main JS Loaded");
 
-    // Mobile menu toggle (if you add a hamburger menu)
-    // const menuButton = document.getElementById('mobile-menu-button');
-    // const mobileMenu = document.getElementById('mobile-menu');
-    // if (menuButton && mobileMenu) {
-    //     menuButton.addEventListener('click', () => {
-    //         mobileMenu.classList.toggle('hidden');
-    //     });
-    // }
-
     // Auto-dismiss flash messages after a few seconds
     const flashMessages = document.querySelectorAll('.flash-message');
     flashMessages.forEach(function(message) {
         setTimeout(function() {
-            // Add a class for fade-out animation
             message.style.transition = 'opacity 0.5s ease-out';
             message.style.opacity = '0';
-            // Remove the element after animation
             setTimeout(() => message.remove(), 500);
         }, 5000); // 5 seconds
     });
@@ -26,54 +15,53 @@ document.addEventListener('DOMContentLoaded', function() {
     // Dynamic option fields for poll creation
     const addOptionButton = document.getElementById('add-option-button');
     const optionsContainer = document.getElementById('poll-options-container');
-    const pollForm = document.getElementById('create-poll-form'); // Ensure your form has this ID
-    const optionsDataInput = document.getElementById('options_data'); // Hidden input
+    const pollForm = document.getElementById('create-poll-form');
+    const optionsDataInput = document.getElementById('options_data');
 
     if (addOptionButton && optionsContainer && pollForm && optionsDataInput) {
-        let optionCount = optionsContainer.getElementsByTagName('input').length;
+        
+        const createRemoveButton = () => {
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.classList.add('btn', 'btn-danger', 'text-sm', 'p-2', 'flex-shrink-0');
+            removeButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
+            removeButton.title = 'Remove option';
+
+            removeButton.addEventListener('click', function() {
+                this.parentElement.remove();
+                updateOptionPlaceholders();
+            });
+            return removeButton;
+        };
+        
+        const updateOptionPlaceholders = () => {
+            const currentInputs = optionsContainer.querySelectorAll('input[type="text"]');
+            currentInputs.forEach((input, index) => {
+                input.placeholder = 'Option ' + (index + 1);
+            });
+        };
 
         addOptionButton.addEventListener('click', function() {
-            optionCount++;
+            const optionIndex = optionsContainer.children.length + 1;
             const newOptionDiv = document.createElement('div');
             newOptionDiv.classList.add('flex', 'items-center', 'space-x-2', 'mb-2');
             
             const newOptionInput = document.createElement('input');
             newOptionInput.type = 'text';
-            newOptionInput.name = 'dynamic_option_' + optionCount; // Name not directly used by Flask if using JSON
+            newOptionInput.name = 'dynamic_option_' + optionIndex;
             newOptionInput.classList.add('form-input', 'flex-grow');
-            newOptionInput.placeholder = 'Option ' + (optionsContainer.children.length + 1);
+            newOptionInput.placeholder = 'Option ' + optionIndex;
             
-            const removeButton = document.createElement('button');
-            removeButton.type = 'button'; // Important: prevent form submission
-            removeButton.classList.add('btn', 'btn-danger', 'text-sm', 'p-2');
-            removeButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
-            removeButton.title = 'Remove option';
-
-            removeButton.addEventListener('click', function() {
-                newOptionDiv.remove();
-                // Re-number placeholders if needed, or just let them be
-                updateOptionPlaceholders();
-            });
+            const removeButton = createRemoveButton();
 
             newOptionDiv.appendChild(newOptionInput);
             newOptionDiv.appendChild(removeButton);
             optionsContainer.appendChild(newOptionDiv);
             newOptionInput.focus();
         });
-
-        // Function to update placeholders if options are removed
-        function updateOptionPlaceholders() {
-            const currentInputs = optionsContainer.querySelectorAll('input[type="text"]');
-            currentInputs.forEach((input, index) => {
-                input.placeholder = 'Option ' + (index + 1);
-            });
-        }
         
-        // Initial setup for existing options (if any, though typically starts empty)
         updateOptionPlaceholders();
 
-
-        // Before submitting the form, gather all option texts into the hidden field as JSON
         pollForm.addEventListener('submit', function(event) {
             const optionInputs = optionsContainer.querySelectorAll('input[type="text"]');
             const optionsTexts = [];
@@ -82,21 +70,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     optionsTexts.push(input.value.trim());
                 }
             });
-            
-            if (optionsTexts.length < 2) {
-                // Optionally show a client-side validation message
-                // alert("Please provide at least two distinct options.");
-                // The server-side validation will catch this too.
-                // For better UX, you might want to prevent submission here and show an error.
-                // For now, relying on server-side for robust validation.
-            }
-            
             optionsDataInput.value = JSON.stringify(optionsTexts);
-            console.log("Submitting options:", optionsDataInput.value);
         });
     }
 
-    // Confirmation for delete buttons (e.g., delete user in admin)
+    // Confirmation for delete buttons
     const deleteButtons = document.querySelectorAll('.confirm-delete');
     deleteButtons.forEach(button => {
         button.addEventListener('click', function(event) {
